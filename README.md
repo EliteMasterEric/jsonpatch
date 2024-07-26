@@ -1,6 +1,6 @@
 # JSONPatch
 
-A library for parsing and evaluating [JSONPatch](https://goessner.net/articles/JsonPath/) files on JSON data objects.
+A library for parsing and evaluating [JSONPatch](https://jsonpatch.com/) files on JSON data objects.
 
 It deviates from the spec in that it supports both [JSONPointer](https://datatracker.ietf.org/doc/rfc6901/) and [JSONPath](https://datatracker.ietf.org/doc/rfc9535/) for the path argument.
 
@@ -31,4 +31,4 @@ trace(JSONPatch.applyPatch(patch, data));
 
 ## Licensing
 
-JSONPath is made available under an open source MIT License. You can read more at [LICENSE](LICENSE.md).
+JSONPatch is made available under an open source MIT License. You can read more at [LICENSE](LICENSE.md).
