@@ -1,0 +1,28 @@
+{
+  "dependencies": [
+    {
+      "name": "thx.core",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/FunkinCrew/thx.core"
+    },
+    {
+      "name": "utest",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/haxe-utest/utest"
+    },
+    {
+      "name": "jsonpath",
+      "type": "haxelib",
+      "version": null
+    },
+    {
+      "name": "yaml",
+      "type": "haxelib",
+      "version": null
+    }
+  ]
+}

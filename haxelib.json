@@ -1,0 +1,21 @@
+{
+  "name": "jsonpatch",
+  "url": "https://github.com/EliteMasterEric/jsonpatch",
+  "license": "MIT",
+  "tags": [
+    "json",
+    "data",
+    "jsonpatch",
+    "jsonpath"
+  ],
+  "description": "A library for parsing and evaluating JSONPatch documents on JSON data objects.",
+  "version": "1.0.0",
+  "releasenote": "Initial release",
+  "dependencies": {
+    "jsonpath": "",
+    "thx.core": ""
+  },
+  "contributors": [
+    "MasterEric"
+  ]
+}
