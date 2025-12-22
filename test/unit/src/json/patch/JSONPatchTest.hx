@@ -83,11 +83,11 @@ class JSONPatchTest
         }, 'test failed, values (10 =/= 10) not equivalent');
 
         // A.16. Adding an Array Value
-        var doc = { "foo": ["bar"] };
+        var doc:{foo:Array<Dynamic>} = { "foo": ["bar"] };
         var patch = [{ "op": "add", "path": "/foo/-", "value": ["abc", "def"] }];
         var result = JSONPatch.applyPatches(doc, patch);
         var expected1:Array<Dynamic> = ["bar", ["abc", "def"]];
-        var expected = { "foo": expected1 };
+        var expected:{foo:Array<Dynamic>} = { "foo": expected1 };
         Test.assertEquals(result, expected);
 
         // 
