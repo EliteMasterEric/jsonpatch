@@ -1,5 +1,6 @@
 package json.patch;
 
+import haxe.ds.Either;
 import json.pointer.JSONPointer;
 import json.JSONData;
 import json.util.TypeUtil;
@@ -7,7 +8,67 @@ import json.path.JSONPath;
 
 using StringTools;
 
+typedef JSONPatchOperation = JSONData;
+
 class JSONPatch {
+
+    /**
+     * For the given JSON data, apply all the provided JSONPatches.
+     * @param data A JSON data object. You can pass `Dynamic` or `Array<Dynamic>` here.
+     * @param patchBatch Either a JSON Patch (as an array of operations) or an array of JSON Patches (i.e. an array of arrays of operations)
+     *   If multiple patches are provided, each will apply to the data in order.
+     *   In the event of a failed patch, the data will not be modified and the next patch will be evaluated.
+     * @return The resulting JSON data.
+     */
+    public static function applyPatches(data:JSONData, patchBatch:Array<Dynamic>):JSONData {
+        if (patchBatch == null || patchBatch.length == 0) return data;
+
+        // true = array of arrays, false = array of objects, null = not yet determined
+        var isBatch = false;
+        var isSinglePatch:Bool = false;
+        
+        // Distinguish between a single patch and an array of patches.
+        for (patch in patchBatch) {
+            if (Std.isOfType(patch, Array)) {
+                // patch is an Array of objects.
+                isBatch = true;
+                if (isSinglePatch) throw "Cannot mix individual operations with patches!";
+            } else {
+                // patch is an Object
+                isSinglePatch = true;
+                if (isBatch) throw "Cannot mix individual operations with patches!";
+            }
+        }
+
+        if (isSinglePatch) {
+            var patch:Array<JSONPatchOperation> = patchBatch;
+            try {
+                return JSONPatch.applyPatch(data, patch);
+            } catch (e) {
+                // The only patch in the batch failed, throw the error!
+                throw e;
+            }
+        } else if (isBatch) {
+            var result:JSONData = data.copy();
+            var successes:Int = 0;
+            var failures:Int = 0;
+            for (patch in patchBatch) {
+                try {
+                    result = JSONPatch.applyPatch(result, patch);
+                    successes += 1;
+                } catch (e) {
+                    // The patch failed, skip it and continue.
+                    // TODO: Improve error handling for each patch
+                    trace('Failed to apply patch ${successes+1}/${patchBatch.length}: ' + e);
+                    failures += 1;
+                }
+            }
+            // trace('${successes}/${patchBatch.length} patches applied successfully.');
+            return result;
+        } else {
+            throw "Neither single patch nor batch of patches provided? Huh?";
+        }
+    }
 
     /**
      * For the given JSON data, apply all the provided JSONPatch operations.
@@ -19,7 +80,7 @@ class JSONPatch {
      * @see https://datatracker.ietf.org/doc/rfc6902/
      * @return The resulting JSON data.
      */
-    public static function applyPatches(data:JSONData, patch:Array<JSONData>):JSONData {
+    public static function applyPatch(data:JSONData, patch:Array<JSONPatchOperation>):JSONData {
         if (data == null || patch == null) return null;
         if (patch.length == 0) return data;
         
@@ -41,7 +102,7 @@ class JSONPatch {
      * @see https://datatracker.ietf.org/doc/rfc6902/
      * @return The resulting JSON data.
      */
-    public static function applyOperation(data:JSONData, operation:JSONData):JSONData {
+    public static function applyOperation(data:JSONData, operation:JSONPatchOperation):JSONData {
         if (operation == null) return data;
 
         var result = data.copy();
@@ -58,7 +119,7 @@ class JSONPatch {
             case "copy":
                 result = applyOperation_copy(result, operation.get('from'), operation.get('path'));
             case "test":
-                result = applyOperation_test(result, operation.get('path'), operation.get('value', NoValue));
+                result = applyOperation_test(result, operation.get('path'), operation.get('value', NoValue), operation.get('inverse', false));
             default:
                 throw 'Unsupported operation "${operation.get('op')}", expected one of "test", "add", "replace", "remove", "move", "copy"';
         }
@@ -182,9 +243,11 @@ class JSONPatch {
         return data;
     }
 
-    static function applyOperation_test(data:JSONData, path:String, expected:Dynamic):JSONData {
+    static function applyOperation_test(data:JSONData, path:String, expected:Dynamic, inverse:Bool):JSONData {
         if (path == null) throw 'path is required';
-        if (expected == NoValue) throw 'value is required';
+        
+        // If the value is excluded, we check if the target value exists and has ANY value.
+        var testExists = expected == NoValue;
 
         // Query the target location
         // The value at the target location must exist and must be equal to the provided value
@@ -196,13 +259,38 @@ class JSONPatch {
             try {
 
                 if (!data.existsByPath(targetPath)) {
-                    throw 'test failed, target not found';
+                    if (inverse && testExists) {
+                        // Inverse existence test passed
+                        continue;
+                    } else {
+                        throw 'test failed, target not found';
+                    }
+                }
+
+                // If we are only testing for existence, then we can skip checking the value
+                if (testExists && !inverse) {
+                    // Continue to the next target path
+                    continue;
+                } else if (testExists && inverse) {
+                    throw 'test failed, target exists';
                 }
                 
                 var actual = data.getByPath(targetPath);
                 
                 if (!thx.Dynamics.equals(actual, expected)) {
-                    throw 'test failed, values (${actual} =/= ${expected}) not equivalent';
+                    if (inverse) {   
+                        // Continue to the next target path
+                        continue;
+                    } else {
+                        throw 'test failed, values (${actual} =/= ${expected}) not equivalent';
+                    }
+                } else {
+                    if (inverse) {
+                        throw 'test failed, values (${actual} == ${expected}) are equivalent';
+                    } else {
+                        // Continue to the next target path
+                        continue;
+                    }
                 }
             } catch (e) {
                 if ('$e'.startsWith('test failed')) {
