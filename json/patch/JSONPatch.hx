@@ -13,6 +13,9 @@ class JSONPatch {
      * For the given JSON data, apply all the provided JSONPatch operations.
      * @param data A JSON data object. You can pass `Dynamic` or `Array<Dynamic>` here.
      * @param patch An array of JSONPatch operations to perform.
+     * @throws error If any of the operations fail or any of the `tests` return `false`.
+     *   Your application should catch these errors, log them for users to fix,
+     *   and return the unmodified original data.
      * @see https://datatracker.ietf.org/doc/rfc6902/
      * @return The resulting JSON data.
      */
