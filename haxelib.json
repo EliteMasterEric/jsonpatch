@@ -9,8 +9,8 @@
     "jsonpath"
   ],
   "description": "A library for parsing and evaluating JSONPatch documents on JSON data objects.",
-  "version": "1.0.0",
-  "releasenote": "Initial release",
+  "version": "1.1.0",
+  "releasenote": "Added stacked patches and new test functionality.",
   "dependencies": {
     "jsonpath": "",
     "thx.core": ""
